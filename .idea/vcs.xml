@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../3D-BoNet" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../PointCNN" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../jsis3d" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../pointnet" vcs="Git" />
+  </component>
+</project>
