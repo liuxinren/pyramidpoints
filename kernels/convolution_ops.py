@@ -156,7 +156,30 @@ def KPConv(query_points,
                       KP_extent,
                       KP_influence,
                       aggregation_mode)
+def weight_variable(shape):
+    # tf.set_random_seed(42)
+    initial = tf.truncated_normal(shape, stddev=np.sqrt(2 / shape[-1]))
+    initial = tf.round(initial * tf.constant(1000, dtype=tf.float32)) / tf.constant(1000, dtype=tf.float32)
+    return tf.Variable(initial, name='weights')
 
+def channel_attention(x, f):
+        """
+        Channel Attention (CA) Layer
+        :param x: input layer
+        :param f: conv2d filter size
+        :param reduction: conv2d filter reduction rate
+        :param name: scope name
+        :return: output layer
+        """
+        with tf.variable_scope("CAM"):
+            skip_conn = tf.identity(x, name='identity')
+
+            x = tf.reduce_sum(x, axis=0)
+            w1 = weight_variable([int(x.shape[1]), f])
+            x = unary_convolution(x, w1)
+            x = tf.nn.leaky_relu(x)
+            x = tf.nn.sigmoid(x)
+            return tf.multiply(skip_conn, x)
 
 def KPConv_ops(query_points,
                support_points,
@@ -242,6 +265,9 @@ def KPConv_ops(query_points,
     # Apply network weights [n_kpoints, n_points, out_fdim]
     weighted_features = tf.transpose(weighted_features, [1, 0, 2])
     kernel_outputs = tf.matmul(weighted_features, K_values)
+
+    dims = int(kernel_outputs.shape[-1])
+    kernel_outputs = channel_attention(kernel_outputs, dims)
 
     # Convolution sum to get [n_points, out_fdim]
     output_features = tf.reduce_sum(kernel_outputs, axis=0)

@@ -45,7 +45,7 @@ def get_statistics(predict_folder):
     for file in classified_files:
 
         data = read_ply(file)
-        gt_labels = data['sem_class']
+        gt_labels = data['class']
         base = os.path.basename(file)
 
         pred_file = os.path.join(predict_folder, base)
@@ -65,7 +65,7 @@ def get_statistics(predict_folder):
         results['blue'] = rgb[:, 2]
         results['correct'] = np.equal(gt_labels, pred_labels).astype(np.int32)
         results['preds'] = pred_data['preds']
-        results['ground_truth'] = data['sem_class']
+        results['ground_truth'] = data['class']
 
         test = [results['x'],results['y'],results['z'],results['red'],results['green'],results['blue'],results['correct'],results['preds'],results['ground_truth'] ]
 

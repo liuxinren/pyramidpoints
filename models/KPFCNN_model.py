@@ -39,6 +39,17 @@ from models.network_blocks import segmentation_loss, multi_segmentation_loss
 #           Model Class
 #       \*****************/
 #
+def classification_loss_focal2(logits, inputs, gamma=2.0, alpha=0.75,batch_average=False):
+
+    labels = inputs['point_labels']
+
+    y_pred=tf.nn.softmax(logits,dim=-1) # [batch_size,num_classes]
+    y_pred = tf.clip_by_value(y_pred, 1.e-9, 1.0)
+    labels=tf.one_hot(labels,depth=9)
+    L=-labels*((1-y_pred)**gamma)*tf.log(y_pred)
+    L=tf.reduce_sum(L,axis=1)
+
+    return tf.reduce_mean(L)
 
 
 class KernelPointFCNN:
@@ -127,6 +138,8 @@ class KernelPointFCNN:
                                                 self.config,
                                                 self.dropout_prob)
 
+            self.logits = self.CAM_Module(self.logits)
+
         ########
         # Losses
         ########
@@ -163,14 +176,16 @@ class KernelPointFCNN:
                     new_dict['batch_weights'] = self.inputs['batch_weights']
 
                 # Output loss
-                self.output_loss = segmentation_loss(new_logits,
-                                                     new_dict,
-                                                     batch_average=self.config.batch_averaged_loss)
+                #self.output_loss = segmentation_loss(new_logits,
+                #                                     new_dict,
+                #                                     batch_average=self.config.batch_averaged_loss)
+                self.output_loss = classification_loss_focal2(new_logits, new_dict)
 
             else:
-                self.output_loss = segmentation_loss(self.logits,
-                                                     self.inputs,
-                                                     batch_average=self.config.batch_averaged_loss)
+                #self.output_loss = segmentation_loss(self.logits,
+                #                                     self.inputs,
+                #                                     batch_average=self.config.batch_averaged_loss)
+                self.output_loss = classification_loss_focal2(self.logits, self.inputs)
 
             # Add regularization
             self.loss = self.regularization_losses() + self.output_loss
@@ -299,6 +314,31 @@ class KernelPointFCNN:
 
         self.config.save(self.saving_path)
 
+
+    def CAM_Module(self, point_features2):
+
+        with tf.variable_scope('cam') as sc:
+            self.gamma = tf.Variable(0.)
+
+            m_batchsize = tf.shape(point_features2)[0]
+            channels = tf.shape(point_features2)[1]
+            #p_num = tf.shape(point_features2)[1]
+
+            proj_query = tf.reshape(point_features2, [m_batchsize, channels, -1])
+
+            proj_key = tf.transpose(tf.reshape(point_features2, [m_batchsize, channels, -1]), perm=[0, 2, 1])
+            energy = tf.matmul(proj_query, proj_key)
+            energy_new = tf.reduce_max(energy, axis=-1, keep_dims=True)[0]
+            energy_new = tf.broadcast_to(energy_new, [m_batchsize, channels, channels])
+
+            attention = tf.nn.softmax(energy_new, name='cam-soft')
+            proj_value = tf.reshape(point_features2, [m_batchsize, channels, -1])
+            out = tf.matmul(attention, proj_value)
+            out = tf.reshape(out, [m_batchsize,channels])
+
+            out = tf.math.add(self.gamma * out, point_features2)
+
+        return out
 
 
 

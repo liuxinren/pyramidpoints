@@ -73,7 +73,6 @@ class NPM3DConfig(Config):
     #########################
 
     # Define layers
-
     architecture = ['simple',
                     'resnetb',
                     'resnetb_strided',
@@ -93,10 +92,9 @@ class NPM3DConfig(Config):
                     'nearest_upsample',
                     'unary']
 
-
     # KPConv specific parameters
     num_kernel_points = 15
-    first_subsampling_dl = 0.15
+    first_subsampling_dl = 0.08
     in_radius = 4.0
 
     # Density of neighborhoods for deformable convs (which need bigger radiuses). For normal conv we use KP_extent
@@ -130,7 +128,7 @@ class NPM3DConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 1000
+    max_epoch = 600
 
     # Learning rate management
     learning_rate = 1e-2
@@ -139,7 +137,7 @@ class NPM3DConfig(Config):
     grad_clip_norm = 100.0
 
     # Number of batch
-    batch_num = 32
+    batch_num = 8
 
     # Number of steps per epochs (cannot be None for this dataset)
     epoch_steps = 500
@@ -188,7 +186,7 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU_ID
 
     # Enable/Disable warnings (set level to '0'/'3')
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
     ###########################
     # Load the model parameters
@@ -206,11 +204,11 @@ if __name__ == '__main__':
 
     # Initiate dataset configuration
     dataset = NPM3DDataset(config.input_threads, load_test=False)
-    print('Dataset Declaration')
+
     # Create subsampled input clouds
     dl0 = config.first_subsampling_dl
     dataset.load_subsampled_clouds(dl0)
-    print('Load Sampled Clouds')
+
     # Initialize input pipelines
     dataset.init_input_pipeline(config)
 

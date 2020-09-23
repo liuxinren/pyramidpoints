@@ -1,3 +1,26 @@
+#
+#
+#      0=========================0
+#      |    Kernel Point CNN     |
+#      0=========================0
+#
+#
+# ----------------------------------------------------------------------------------------------------------------------
+#
+#      Handle NPM3D dataset in a class
+#
+# ----------------------------------------------------------------------------------------------------------------------
+#
+#      Hugues THOMAS - 11/06/2018
+#
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
+#           Imports and global variables
+#       \**********************************/
+#
+
 # Basic libs
 import os
 import tensorflow as tf
@@ -73,13 +96,15 @@ class NPM3DDataset(Dataset):
         # Dict from labels to names
         self.label_to_names = {0: 'unclassified',
                                1: 'ground',
-                               2: 'veg',
-                               3: 'cars',
-                               4: 'trucks',
-                               5: 'powerlines',
-                               6: 'fences/hedges',
-                               7: 'poles',
-                               8: 'buildings'}
+                               2: 'buildings',
+                               3: 'poles',
+                               4: 'bollards',
+                               5: 'trash_cans',
+                               6: 'barriers',
+                               7: 'pedestrians',
+                               8: 'cars',
+                               9: 'natural'}
+
 
         # Initiate a bunch of variables concerning class labels
         self.init_labels()
@@ -117,9 +142,8 @@ class NPM3DDataset(Dataset):
         self.test_files = np.sort([join(self.test_path, f) for f in listdir(self.test_path) if f[-4:] == '.ply'])
 
         # Proportion of validation scenes
-        self.all_splits = list(range(0, len(self.train_files)))
-        self.validation_split = 5
-
+        self.all_splits = [0, 1, 2, 3]
+        self.validation_split = 1
 
     def load_subsampled_clouds(self, subsampling_parameter):
         """
@@ -176,8 +200,7 @@ class NPM3DDataset(Dataset):
 
                 # read ply with data
                 data = read_ply(sub_ply_file)
-
-                sub_reflectance = np.expand_dims(data['intensity'], 1)
+                sub_reflectance = np.expand_dims(data['reflectance'], 1)
                 if cloud_split == 'test':
                     sub_labels = None
                 else:
@@ -192,14 +215,14 @@ class NPM3DDataset(Dataset):
                 # Read ply file
                 data = read_ply(file_path)
                 points = np.vstack((data['x'], data['y'], data['z'])).astype(np.float32).T
-                reflectance = np.expand_dims(data['intensity'], 1).astype(np.float32)
+                reflectance = np.expand_dims(data['reflectance'], 1).astype(np.float32)
                 if cloud_split == 'test':
                     int_features = None
                 else:
-                    int_features = data['sem_class']
+                    int_features = data['class']
 
                 # Saturate reflectance
-                reflectance = np.minimum(reflectance, 65536.0)
+                reflectance = np.minimum(reflectance, 50.0)
 
                 # Subsample cloud
                 sub_data = grid_subsampling(points,
@@ -208,7 +231,7 @@ class NPM3DDataset(Dataset):
                                             sampleDl=subsampling_parameter)
 
                 # Rescale and saturate float reflectance
-                sub_reflectance = sub_data[1] / 65536.0
+                sub_reflectance = sub_data[1] / 50.0
 
                 # Get chosen neighborhoods
                 search_tree = KDTree(sub_data[0], leaf_size=50)
@@ -222,12 +245,12 @@ class NPM3DDataset(Dataset):
                     sub_labels = None
                     write_ply(sub_ply_file,
                               [sub_data[0], sub_reflectance],
-                              ['x', 'y', 'z', 'intensity'])
+                              ['x', 'y', 'z', 'reflectance'])
                 else:
                     sub_labels = np.squeeze(sub_data[2])
                     write_ply(sub_ply_file,
                               [sub_data[0], sub_reflectance, sub_labels],
-                              ['x', 'y', 'z', 'intensity', 'class'])
+                              ['x', 'y', 'z', 'reflectance', 'class'])
 
             # Fill data containers
             self.input_trees[cloud_split] += [search_tree]
@@ -274,7 +297,7 @@ class NPM3DDataset(Dataset):
                     # Get original points
                     data = read_ply(file_path)
                     points = np.vstack((data['x'], data['y'], data['z'])).T
-                    labels = data['sem_class']
+                    labels = data['class']
 
                     # Compute projection inds
                     proj_inds = np.squeeze(self.input_trees['validation'][i_val].query(points, return_distance=False))
@@ -1046,3 +1069,4 @@ class NPM3DDataset(Dataset):
 
 
         print('\nFinished\n\n')
+
