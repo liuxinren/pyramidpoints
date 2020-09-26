@@ -174,10 +174,13 @@ def channel_attention(x, f):
         with tf.variable_scope("CAM"):
             skip_conn = tf.identity(x, name='identity')
 
-            x = tf.reduce_sum(x, axis=0)
+            x = tf.reduce_mean(x, axis=0)
             w1 = weight_variable([int(x.shape[1]), f])
             x = unary_convolution(x, w1)
             x = tf.nn.leaky_relu(x)
+            w2 = weight_variable([int(x.shape[1]), f])
+            x = unary_convolution(x, w2)
+
             x = tf.nn.sigmoid(x)
             return tf.multiply(skip_conn, x)
 
