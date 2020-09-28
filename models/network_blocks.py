@@ -302,7 +302,10 @@ def resnetb_block(layer_ind, inputs, features, radius, fdim, config, training):
 
     with tf.variable_scope('conv2'):
         w = weight_variable([config.num_kernel_points, int(x.shape[1]), fdim // 2])
-        x = KPConv(inputs['points'][layer_ind],
+        for i in range(2):
+
+            if i == 0:
+                x1 = KPConv(inputs['points'][layer_ind],
                    inputs['points'][layer_ind],
                    inputs['neighbors'][layer_ind],
                    x,
@@ -310,7 +313,15 @@ def resnetb_block(layer_ind, inputs, features, radius, fdim, config, training):
                    radius,
                    config)
 
-        x = leaky_relu(batch_norm(x,
+            x1 = KPConv(inputs['points'][layer_ind],
+                   inputs['points'][layer_ind],
+                   inputs['neighbors'][layer_ind],
+                   x+x1,
+                   w,
+                   radius,
+                   config)
+
+        x = leaky_relu(batch_norm(x1,
                                   config.use_batch_norm,
                                   config.batch_norm_momentum,
                                   training))
