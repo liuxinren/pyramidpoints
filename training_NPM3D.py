@@ -137,7 +137,7 @@ class NPM3DConfig(Config):
     grad_clip_norm = 100.0
 
     # Number of batch
-    batch_num = 8
+    batch_num = 2
 
     # Number of steps per epochs (cannot be None for this dataset)
     epoch_steps = 500

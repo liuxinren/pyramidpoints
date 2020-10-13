@@ -128,6 +128,8 @@ class KernelPointFCNN:
                                                    self.config,
                                                    self.dropout_prob)
 
+            output_features = self.CAM_Module(output_features)
+
             if config.network_model in ["multi_segmentation", 'multi_cloud_segmentation']:
                 self.logits = multi_segmentation_head(output_features,
                                                       self.inputs['super_labels'],
@@ -138,7 +140,7 @@ class KernelPointFCNN:
                                                 self.config,
                                                 self.dropout_prob)
 
-            self.logits = self.CAM_Module(self.logits)
+            #self.logits = self.CAM_Module(self.logits)
 
         ########
         # Losses

@@ -39,7 +39,7 @@ import kernels.convolution_ops as conv_ops
 def weight_variable(shape):
     # tf.set_random_seed(42)
     initial = tf.truncated_normal(shape, stddev=np.sqrt(2 / shape[-1]))
-    initial = tf.round(initial * tf.constant(1000, dtype=tf.float32)) / tf.constant(1000, dtype=tf.float32)
+    initial = tf.round(initial * tf.constant(500, dtype=tf.float32)) / tf.constant(500, dtype=tf.float32)
     return tf.Variable(initial, name='weights')
 
 
